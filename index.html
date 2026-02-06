@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>SPEED TV – Login</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a1628">
+<link rel="manifest" href="manifest.json">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #0a1628 0%, #1a2332 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    padding: 20px;
+}
+
+.login-container {
+    background: rgba(15, 25, 40, 0.95);
+    padding: 40px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(31, 107, 255, 0.2);
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo h1 {
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.logo p {
+    color: #7a8ca8;
+    font-size: 14px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    color: #b8c5d6;
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(10, 22, 40, 0.8);
+    border: 1px solid rgba(31, 107, 255, 0.3);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #1f6bff;
+    background: rgba(10, 22, 40, 1);
+    box-shadow: 0 0 0 3px rgba(31, 107, 255, 0.1);
+}
+
+.input-group input::placeholder {
+    color: #5a6b7f;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #1f6bff 0%, #0052cc 100%);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, #2a7aff 0%, #0060e6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(31, 107, 255, 0.4);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.error-message {
+    background: rgba(255, 59, 48, 0.1);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #ff6b6b;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+    animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 30px 20px;
+    }
+    
+    .logo h1 {
+        font-size: 28px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="logo">
+        <h1>SPEED TV</h1>
+        <p>Entre com suas credenciais</p>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+
+    <div class="input-group">
+        <label for="user">Usuário</label>
+        <input id="user" type="text" placeholder="Digite seu usuário" autocomplete="username">
+    </div>
+
+    <div class="input-group">
+        <label for="pass">Senha</label>
+        <input id="pass" type="password" placeholder="Digite sua senha" autocomplete="current-password">
+    </div>
+
+    <button id="btnLogin" class="btn-login" onclick="login()">Entrar</button>
+</div>
+
+<script>
+const API_BASE = 'https://speedtv.x44bet.com';
+
+// Registrar service worker
+if ("serviceWorker" in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register("sw.js").catch(err => {
+            console.log('Service Worker registration failed:', err);
+        });
+    });
+}
+
+// Verificar se já está logado
+if (localStorage.getItem("logado") === "1") {
+    const userInfo = localStorage.getItem("user_info");
+    if (userInfo) {
+        redirectToPlayer();
+    }
+}
+
+// Permitir login com Enter
+document.getElementById('pass').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        login();
+    }
+});
+
+function isMobile() {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.classList.add('show');
+    setTimeout(() => {
+        errorDiv.classList.remove('show');
+    }, 5000);
+}
+
+function redirectToPlayer() {
+    if (isMobile()) {
+        location.href = "player-mobile.html";
+    } else {
+        location.href = "player-pc.html";
+    }
+}
+
+async function login() {
+    const user = document.getElementById("user").value.trim();
+    const pass = document.getElementById("pass").value.trim();
+    const btnLogin = document.getElementById("btnLogin");
+
+    if (!user || !pass) {
+        showError("Preencha todos os campos");
+        return;
+    }
+
+    btnLogin.disabled = true;
+    btnLogin.innerHTML = '<span class="loading"></span>Entrando...';
+
+    try {
+        const apiUrl = `${API_BASE}/api/user/info?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
+
+        const resp = await fetch(apiUrl, {
+            method: "GET"
+        });
+
+        if (resp.status === 200) {
+            const data = await resp.json();
+
+            // Salvar credenciais e informações do usuário
+            localStorage.setItem("logado", "1");
+            localStorage.setItem("user", user);
+            localStorage.setItem("pass", pass);
+            localStorage.setItem("user_info", JSON.stringify(data));
+
+            // Redirecionar para o player apropriado
+            redirectToPlayer();
+
+        } else if (resp.status === 401) {
+            showError("Usuário ou senha inválidos");
+            btnLogin.disabled = false;
+            btnLogin.textContent = "Entrar";
+        } else {
+            showError(`Erro ao validar login (${resp.status})`);
+            btnLogin.disabled = false;
+            btnLogin.textContent = "Entrar";
+        }
+
+    } catch (err) {
+        console.error(err);
+        showError("Falha ao conectar no servidor. Verifique sua conexão.");
+        btnLogin.disabled = false;
+        btnLogin.textContent = "Entrar";
+    }
+}
+</script>
+
+</body>
+</html>

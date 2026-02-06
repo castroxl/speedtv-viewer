@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>SPEED TV – Player</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="theme-color" content="#0a1628">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
+
+<style>
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Header Mobile */
+.header-mobile {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    position: sticky;
+    top: 0;
+}
+
+.logo-mobile {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+}
+
+.logo-mobile span {
+    color: var(--primary-color);
+}
+
+.menu-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tabs Mobile - Bottom Navigation */
+.tabs-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.tab-mobile {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-mobile.active {
+    color: var(--primary-color);
+}
+
+.tab-mobile svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Main Content Mobile */
+.main-mobile {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 70px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Player Fullscreen Mobile */
+.player-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    z-index: 2000;
+    display: none;
+}
+
+.player-fullscreen.show {
+    display: block;
+}
+
+.player-container-mobile {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.player-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2001;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Content Area Mobile */
+.content-mobile {
+    padding: 16px;
+}
+
+/* Channel Grid Mobile */
+.channels-grid-mobile {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.channel-card-mobile {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    touch-action: manipulation;
+}
+
+.channel-card-mobile:active {
+    transform: scale(0.98);
+}
+
+.channel-image-mobile {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    background: var(--bg-primary);
+}
+
+.channel-info-mobile {
+    padding: 12px;
+}
+
+.channel-name-mobile {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.channel-category-mobile {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: inline-block;
+    padding: 3px 8px;
+    background: rgba(31, 107, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Jogo Card Mobile */
+.jogo-card-mobile {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 12px;
+    touch-action: manipulation;
+}
+
+.jogo-card-mobile:active {
+    transform: scale(0.98);
+}
+
+.jogo-header-mobile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.jogo-image-mobile {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--bg-primary);
+}
+
+.jogo-info-mobile h3 {
+    font-size: 15px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.jogo-info-mobile p {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.jogo-teams-mobile {
+    padding: 10px;
+    background: rgba(31, 107, 255, 0.05);
+    border-radius: 8px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.jogo-teams-mobile span {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* EPG Mobile */
+.epg-item-mobile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 10px;
+    touch-action: manipulation;
+}
+
+.epg-item-mobile:active {
+    transform: scale(0.98);
+}
+
+.epg-channel-image-mobile {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--bg-primary);
+    flex-shrink: 0;
+}
+
+.epg-content-mobile {
+    flex: 1;
+    min-width: 0;
+}
+
+.epg-channel-name-mobile {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.epg-program-title-mobile {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.epg-program-time-mobile {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Profile Mobile */
+.profile-header-mobile {
+    text-align: center;
+    padding: 30px 20px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.profile-avatar-mobile {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    border: 3px solid var(--primary-color);
+    object-fit: cover;
+    background: var(--bg-primary);
+}
+
+.profile-name-mobile {
+    font-size: 20px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.profile-plan-mobile {
+    display: inline-block;
+    padding: 5px 14px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: var(--text-primary);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.profile-info-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.profile-info-item-mobile {
+    background: var(--bg-secondary);
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.profile-info-label-mobile {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-info-value-mobile {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.profile-info-value-mobile.status-active {
+    color: var(--success-color);
+}
+
+.profile-info-value-mobile.status-inactive {
+    color: var(--error-color);
+}
+
+/* Search Mobile */
+.search-box-mobile {
+    margin-bottom: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding: 12px 0;
+}
+
+.search-box-mobile input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.search-box-mobile input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Sidebar Mobile (Menu) */
+.sidebar-mobile {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    z-index: 1500;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.sidebar-mobile.show {
+    left: 0;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1499;
+    display: none;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
+/* Status Badge Mobile */
+.status-badge-mobile {
+    position: fixed;
+    top: 60px;
+    left: 16px;
+    right: 16px;
+    padding: 12px 16px;
+    background: rgba(255, 212, 59, 0.1);
+    border: 1px solid rgba(255, 212, 59, 0.3);
+    color: var(--warning-color);
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 1001;
+    display: none;
+}
+
+.status-badge-mobile.show {
+    display: block;
+    animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Empty State Mobile */
+.empty-state-mobile {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state-mobile svg {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-mobile h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.empty-state-mobile p {
+    font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div class="header-mobile">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="logo-mobile">SPEED <span>TV</span></div>
+    <button class="menu-toggle" onclick="logout()" style="font-size: 18px;">Sair</button>
+</div>
+
+<div class="status-badge-mobile" id="statusBadge">
+    ⚠️ API offline
+</div>
+
+<div class="main-mobile" id="mainContent">
+    <div class="content-mobile">
+        <div class="search-box-mobile">
+            <input type="text" id="searchInput" placeholder="Buscar..." oninput="handleSearch()">
+        </div>
+        <div id="contentArea"></div>
+    </div>
+</div>
+
+<div class="tabs-mobile">
+    <button class="tab-mobile active" onclick="switchTab('canais')" data-tab="canais">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <span>Canais</span>
+    </button>
+    <button class="tab-mobile" onclick="switchTab('jogos')" data-tab="jogos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+        </svg>
+        <span>Jogos</span>
+    </button>
+    <button class="tab-mobile" onclick="switchTab('epg')" data-tab="epg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>EPG</span>
+    </button>
+    <button class="tab-mobile" onclick="switchTab('filmes')" data-tab="filmes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <span>Filmes</span>
+    </button>
+    <button class="tab-mobile" onclick="switchTab('series')" data-tab="series">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <span>Séries</span>
+    </button>
+    <button class="tab-mobile" onclick="switchTab('perfil')" data-tab="perfil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Perfil</span>
+    </button>
+</div>
+
+<!-- Player Fullscreen -->
+<div class="player-fullscreen" id="playerFullscreen">
+    <button class="player-close" onclick="closePlayer()">×</button>
+    <div class="player-container-mobile" id="playerContainer"></div>
+</div>
+
+<!-- Sidebar Menu -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-mobile" id="sidebarMobile">
+    <div id="sidebarContent"></div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Carregando...</p>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/player.js"></script>
+<script>
+// Verificar autenticação
+if (localStorage.getItem("logado") !== "1") {
+    window.location.href = "index.html";
+}
+
+let currentTab = 'canais';
+let channels = [];
+let jogos = [];
+let epgs = [];
+let userInfo = null;
+let playerManager = null;
+let currentChannels = [];
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verificar status da API
+    const status = await api.checkStatus();
+    if (!status.apiOnline) {
+        document.getElementById('statusBadge').classList.add('show');
+    }
+
+    // Carregar informações do usuário
+    try {
+        userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+    } catch (e) {
+        console.error('Error parsing user info:', e);
+    }
+
+    // Inicializar player manager
+    playerManager = new PlayerManager('#playerContainer');
+
+    // Carregar aba inicial
+    await loadTab('canais');
+});
+
+function showLoading(show = true) {
+    document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebarMobile');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('show');
+    overlay.classList.toggle('show');
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    
+    // Atualizar botões
+    document.querySelectorAll('.tab-mobile').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tab) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Limpar busca
+    document.getElementById('searchInput').value = '';
+    
+    loadTab(tab);
+}
+
+async function loadTab(tab) {
+    showLoading(true);
+    
+    try {
+        switch(tab) {
+            case 'canais':
+                await loadChannels();
+                break;
+            case 'jogos':
+                await loadJogos();
+                break;
+            case 'epg':
+                await loadEPG();
+                break;
+            case 'filmes':
+                await loadFilmes();
+                break;
+            case 'series':
+                await loadSeries();
+                break;
+            case 'perfil':
+                await loadPerfil();
+                break;
+        }
+    } catch (error) {
+        api.showError('Erro ao carregar conteúdo', error);
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadChannels() {
+    try {
+        channels = await api.getChannels();
+        if (!channels) return;
+        
+        currentChannels = channels;
+        renderChannels(channels);
+    } catch (error) {
+        if (error.message === 'LIMIT_REACHED') {
+            api.showError('Erro ao carregar canais', error);
+        } else {
+            api.showError('Erro ao carregar canais', error);
+        }
+    }
+}
+
+function renderChannels(channelsList) {
+    const container = document.getElementById('contentArea');
+    
+    if (!channelsList || channelsList.length === 0) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Nenhum canal encontrado</p></div>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="channels-grid-mobile">
+            ${channelsList.map(channel => `
+                <div class="channel-card-mobile" onclick="playChannel(${channel.id})">
+                    <img src="${channel.image || ''}" alt="${channel.name}" class="channel-image-mobile" onerror="this.style.display='none'">
+                    <div class="channel-info-mobile">
+                        <div class="channel-name-mobile">${channel.name || 'Sem nome'}</div>
+                        <div class="channel-category-mobile">${channel.category || 'Geral'}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function playChannel(channelId) {
+    // Abrir player em fullscreen
+    const playerFullscreen = document.getElementById('playerFullscreen');
+    playerFullscreen.classList.add('show');
+    
+    // Limpar container
+    const container = document.getElementById('playerContainer');
+    container.innerHTML = '<div id="clappr-player"></div>';
+    
+    // Carregar stream
+    loadChannelStream(channelId);
+}
+
+async function loadChannelStream(channelId) {
+    showLoading(true);
+    
+    try {
+        const streamUrl = await api.getChannel(channelId);
+        
+        if (!streamUrl) {
+            api.showError('Erro ao obter stream do canal');
+            showLoading(false);
+            closePlayer();
+            return;
+        }
+        
+        // Inicializar player
+        playerManager.init(streamUrl, {
+            parentId: '#clappr-player'
+        });
+        
+    } catch (error) {
+        if (error.message === 'LIMIT_REACHED') {
+            api.showError('Limite de conexões atingido', error);
+        } else if (error.message === 'TIMEOUT') {
+            api.showError('Tempo de conexão esgotado', error);
+            setTimeout(() => {
+                if (confirm('Tentar novamente?')) {
+                    loadChannelStream(channelId);
+                } else {
+                    closePlayer();
+                }
+            }, 2000);
+        } else {
+            api.showError('Erro ao reproduzir canal', error);
+        }
+        closePlayer();
+    } finally {
+        showLoading(false);
+    }
+}
+
+function closePlayer() {
+    const playerFullscreen = document.getElementById('playerFullscreen');
+    playerFullscreen.classList.remove('show');
+    
+    if (playerManager && playerManager.player) {
+        playerManager.destroy();
+    }
+    
+    const container = document.getElementById('playerContainer');
+    container.innerHTML = '';
+}
+
+async function loadJogos() {
+    try {
+        jogos = await api.getJogos();
+        if (!jogos) return;
+        
+        renderJogos(jogos);
+    } catch (error) {
+        api.showError('Erro ao carregar jogos', error);
+    }
+}
+
+function renderJogos(jogosList) {
+    const container = document.getElementById('contentArea');
+    
+    if (!jogosList || jogosList.length === 0) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Nenhum jogo disponível</p></div>';
+        return;
+    }
+    
+    container.innerHTML = jogosList.map(jogo => {
+        const channelId = jogo.players ? (Array.isArray(jogo.players) ? jogo.players[0] : jogo.players) : null;
+        const teams = jogo.teams || jogo.team1 && jogo.team2 ? `${jogo.team1} vs ${jogo.team2}` : 'Jogo';
+        
+        return `
+            <div class="jogo-card-mobile" onclick="${channelId ? `playChannel(${channelId})` : 'alert(\'Canal não disponível\')'}">
+                <div class="jogo-header-mobile">
+                    ${jogo.image ? `<img src="${jogo.image}" alt="${jogo.name}" class="jogo-image-mobile" onerror="this.style.display='none'">` : ''}
+                    <div class="jogo-info-mobile">
+                        <h3>${jogo.name || 'Jogo'}</h3>
+                        <p>${jogo.league || jogo.liga || 'Liga'}</p>
+                    </div>
+                </div>
+                <div class="jogo-teams-mobile">
+                    <span>${teams}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadEPG() {
+    try {
+        epgs = await api.getEPGs();
+        if (!epgs) return;
+        
+        if (channels.length === 0) {
+            channels = await api.getChannels();
+        }
+        
+        renderEPG(epgs);
+    } catch (error) {
+        api.showError('Erro ao carregar EPG', error);
+    }
+}
+
+function renderEPG(epgsList) {
+    const container = document.getElementById('contentArea');
+    
+    if (!epgsList || epgsList.length === 0) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Nenhum programa disponível</p></div>';
+        return;
+    }
+    
+    const channelsMap = {};
+    channels.forEach(ch => {
+        channelsMap[ch.id] = ch;
+    });
+    
+    container.innerHTML = epgsList.map(epg => {
+        const channel = channelsMap[epg.id];
+        const channelName = channel ? channel.name : `Canal ${epg.id}`;
+        const channelImage = channel ? channel.image : '';
+        const programTitle = epg.title || epg.name || 'Programa';
+        const programTime = epg.time || epg.start || '';
+        
+        return `
+            <div class="epg-item-mobile" onclick="${channel ? `playChannel(${channel.id})` : ''}">
+                ${channelImage ? `<img src="${channelImage}" alt="${channelName}" class="epg-channel-image-mobile" onerror="this.style.display='none'">` : ''}
+                <div class="epg-content-mobile">
+                    <div class="epg-channel-name-mobile">${channelName}</div>
+                    <div class="epg-program-title-mobile">${programTitle}</div>
+                    <div class="epg-program-time-mobile">${programTime}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadFilmes() {
+    try {
+        const filmes = await api.getFilmes();
+        renderFilmes(filmes);
+    } catch (error) {
+        if (error.message === 'COMING_SOON') {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="empty-state-mobile">
+                    <h3>Em breve</h3>
+                    <p>Os filmes estarão disponíveis em breve</p>
+                </div>
+            `;
+        } else if (error.message === 'ACCESS_DENIED') {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="empty-state-mobile">
+                    <h3>Acesso negado</h3>
+                    <p>Você não tem acesso a esta funcionalidade</p>
+                </div>
+            `;
+        } else {
+            api.showError('Erro ao carregar filmes', error);
+        }
+    }
+}
+
+function renderFilmes(filmesList) {
+    const container = document.getElementById('contentArea');
+    
+    if (!filmesList || filmesList.length === 0) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Nenhum filme disponível</p></div>';
+        return;
+    }
+    
+    container.innerHTML = '<div class="empty-state-mobile"><p>Funcionalidade em desenvolvimento</p></div>';
+}
+
+async function loadSeries() {
+    try {
+        const series = await api.getSeries();
+        renderSeries(series);
+    } catch (error) {
+        if (error.message === 'COMING_SOON') {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="empty-state-mobile">
+                    <h3>Em breve</h3>
+                    <p>As séries estarão disponíveis em breve</p>
+                </div>
+            `;
+        } else if (error.message === 'ACCESS_DENIED') {
+            document.getElementById('contentArea').innerHTML = `
+                <div class="empty-state-mobile">
+                    <h3>Acesso negado</h3>
+                    <p>Você não tem acesso a esta funcionalidade</p>
+                </div>
+            `;
+        } else {
+            api.showError('Erro ao carregar séries', error);
+        }
+    }
+}
+
+function renderSeries(seriesList) {
+    const container = document.getElementById('contentArea');
+    
+    if (!seriesList || seriesList.length === 0) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Nenhuma série disponível</p></div>';
+        return;
+    }
+    
+    container.innerHTML = '<div class="empty-state-mobile"><p>Funcionalidade em desenvolvimento</p></div>';
+}
+
+async function loadPerfil() {
+    try {
+        if (!userInfo || Object.keys(userInfo).length === 0) {
+            userInfo = await api.getUserInfo();
+            if (userInfo) {
+                localStorage.setItem('user_info', JSON.stringify(userInfo));
+            }
+        }
+        
+        renderPerfil(userInfo);
+    } catch (error) {
+        api.showError('Erro ao carregar perfil', error);
+    }
+}
+
+function renderPerfil(info) {
+    const container = document.getElementById('contentArea');
+    
+    if (!info) {
+        container.innerHTML = '<div class="empty-state-mobile"><p>Erro ao carregar informações</p></div>';
+        return;
+    }
+    
+    const name = info.name || info.username || 'Usuário';
+    const avatar = info.avatar || info.image || '';
+    const plan = info.plan || info.plano || 'Básico';
+    const status = info.subscription?.status || info.status || 'active';
+    const expires = info.subscription?.expires || info.expires || 'N/A';
+    const connections = info.connections || info.connection_limit || 'N/A';
+    
+    container.innerHTML = `
+        <div class="profile-header-mobile">
+            ${avatar ? `<img src="${avatar}" alt="${name}" class="profile-avatar-mobile" onerror="this.style.display='none'">` : ''}
+            <div class="profile-name-mobile">${name}</div>
+            <div class="profile-plan-mobile">${plan}</div>
+        </div>
+        <div class="profile-info-mobile">
+            <div class="profile-info-item-mobile">
+                <div class="profile-info-label-mobile">Status</div>
+                <div class="profile-info-value-mobile status-${status}">${status === 'active' ? 'Ativo' : 'Inativo'}</div>
+            </div>
+            <div class="profile-info-item-mobile">
+                <div class="profile-info-label-mobile">Expira em</div>
+                <div class="profile-info-value-mobile">${expires}</div>
+            </div>
+            <div class="profile-info-item-mobile">
+                <div class="profile-info-label-mobile">Conexões</div>
+                <div class="profile-info-value-mobile">${connections}</div>
+            </div>
+        </div>
+    `;
+}
+
+function handleSearch() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    
+    if (currentTab === 'canais') {
+        const filtered = channels.filter(ch => 
+            (ch.name && ch.name.toLowerCase().includes(query)) ||
+            (ch.category && ch.category.toLowerCase().includes(query))
+        );
+        renderChannels(filtered);
+    } else if (currentTab === 'jogos') {
+        const filtered = jogos.filter(j => 
+            (j.name && j.name.toLowerCase().includes(query)) ||
+            (j.league && j.league.toLowerCase().includes(query)) ||
+            (j.teams && j.teams.toLowerCase().includes(query))
+        );
+        renderJogos(filtered);
+    }
+}
+
+function logout() {
+    if (confirm('Deseja realmente sair?')) {
+        localStorage.removeItem('logado');
+        localStorage.removeItem('user');
+        localStorage.removeItem('pass');
+        localStorage.removeItem('user_info');
+        window.location.href = 'index.html';
+    }
+}
+
+// Registrar service worker
+if ("serviceWorker" in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register("sw.js").catch(err => {
+            console.log('Service Worker registration failed:', err);
+        });
+    });
+}
+
+// Prevenir zoom em double tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+</script>
+
+</body>
+</html>
