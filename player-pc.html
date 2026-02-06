@@ -178,7 +178,7 @@ body {
 .jogo-card {
     background: var(--bg-card);
     border-radius: 12px;
-    padding: 20px;
+    overflow: hidden;
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.3s ease;
@@ -190,40 +190,46 @@ body {
     border-color: var(--primary-color);
 }
 
-.jogo-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-}
-
 .jogo-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
+    width: 100%;
+    aspect-ratio: 16/9;
     object-fit: cover;
     background: var(--bg-primary);
+    display: block;
 }
 
-.jogo-info h3 {
+.jogo-body {
+    padding: 16px;
+}
+
+.jogo-title {
     font-size: 16px;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    font-weight: 600;
+    margin-bottom: 6px;
 }
 
-.jogo-info p {
+.jogo-league {
     font-size: 13px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.jogo-time {
+    font-size: 12px;
     color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .jogo-teams {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px;
+    padding: 10px 16px;
     background: rgba(31, 107, 255, 0.05);
-    border-radius: 8px;
-    margin-top: 12px;
 }
 
 .jogo-teams span {
@@ -232,51 +238,24 @@ body {
     font-weight: 500;
 }
 
-/* EPG Item */
-.epg-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    background: var(--bg-card);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 12px;
-    transition: all 0.3s ease;
+/* EPG inside channel card */
+.channel-epg {
+    padding: 8px 16px 12px;
+    border-top: 1px solid rgba(31, 107, 255, 0.1);
 }
 
-.epg-item:hover {
-    border-color: var(--primary-color);
-    background: var(--bg-card-hover);
-}
-
-.epg-channel-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: var(--bg-primary);
-}
-
-.epg-content {
-    flex: 1;
-}
-
-.epg-channel-name {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-}
-
-.epg-program-title {
-    font-size: 16px;
-    color: var(--text-primary);
+.channel-epg-title {
+    font-size: 12px;
+    color: var(--primary-color);
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.epg-program-time {
-    font-size: 13px;
+.channel-epg-time {
+    font-size: 11px;
     color: var(--text-muted);
 }
 
@@ -451,7 +430,6 @@ body {
 <div class="tabs-nav">
     <button class="tab-button active" onclick="switchTab('canais')" data-tab="canais">Canais</button>
     <button class="tab-button" onclick="switchTab('jogos')" data-tab="jogos">Jogos</button>
-    <button class="tab-button" onclick="switchTab('epg')" data-tab="epg">EPG</button>
     <button class="tab-button" onclick="switchTab('filmes')" data-tab="filmes">Filmes</button>
     <button class="tab-button" onclick="switchTab('series')" data-tab="series">Séries</button>
     <button class="tab-button" onclick="switchTab('perfil')" data-tab="perfil">Perfil</button>
@@ -493,10 +471,27 @@ if (localStorage.getItem("logado") !== "1") {
 let currentTab = 'canais';
 let channels = [];
 let jogos = [];
-let epgs = [];
+let epgMap = {};
 let userInfo = null;
 let playerManager = null;
 let currentChannels = [];
+
+function ensureArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') {
+        if (data.channels) return ensureArray(data.channels);
+        if (data.data) return ensureArray(data.data);
+        if (data.list) return ensureArray(data.list);
+        if (data.items) return ensureArray(data.items);
+        if (data.jogos) return ensureArray(data.jogos);
+        if (data.epgs) return ensureArray(data.epgs);
+        if (data.filmes) return ensureArray(data.filmes);
+        if (data.series) return ensureArray(data.series);
+        return Object.values(data);
+    }
+    return [];
+}
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', async () => {
@@ -515,6 +510,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicializar player manager
     playerManager = new PlayerManager('#playerContainer');
+
+    // Carregar EPG em background para mostrar nos cards dos canais
+    loadEPGData();
 
     // Carregar aba inicial
     await loadTab('canais');
@@ -552,9 +550,6 @@ async function loadTab(tab) {
             case 'jogos':
                 await loadJogos();
                 break;
-            case 'epg':
-                await loadEPG();
-                break;
             case 'filmes':
                 await loadFilmes();
                 break;
@@ -572,39 +567,70 @@ async function loadTab(tab) {
     }
 }
 
+async function loadEPGData() {
+    try {
+        const epgsRaw = await api.getEPGs();
+        const epgsList = ensureArray(epgsRaw);
+        epgMap = {};
+        epgsList.forEach(epg => {
+            const id = epg.channel_id || epg.id;
+            if (id) {
+                if (!epgMap[id]) epgMap[id] = [];
+                epgMap[id].push(epg);
+            }
+        });
+        // Re-render channels if already loaded
+        if (currentTab === 'canais' && channels.length > 0) {
+            renderChannels(channels);
+        }
+    } catch (e) {
+        console.log('EPG load failed (non-critical):', e);
+    }
+}
+
 async function loadChannels() {
     try {
-        channels = await api.getChannels();
-        if (!channels) return;
+        const data = await api.getChannels();
+        channels = ensureArray(data);
+        if (channels.length === 0) return;
         
         currentChannels = channels;
         renderChannels(channels);
     } catch (error) {
-        if (error.message === 'LIMIT_REACHED') {
-            api.showError('Erro ao carregar canais', error);
-        } else {
-            api.showError('Erro ao carregar canais', error);
-        }
+        api.showError('Erro ao carregar canais', error);
     }
 }
 
 function renderChannels(channelsList) {
     const container = document.getElementById('sidebarContent');
+    const list = ensureArray(channelsList);
     
-    if (!channelsList || channelsList.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>Nenhum canal encontrado</p></div>';
         return;
     }
     
-    container.innerHTML = channelsList.map(channel => `
-        <div class="channel-card" onclick="playChannel(${channel.id})">
-            <img src="${channel.image || ''}" alt="${channel.name}" class="channel-image" onerror="this.style.display='none'">
+    container.innerHTML = list.map(channel => {
+        const chId = channel.id || channel.channel_id;
+        const epgInfo = epgMap[chId];
+        const currentProgram = epgInfo && epgInfo.length > 0 ? epgInfo[0] : null;
+        const epgTitle = currentProgram ? (currentProgram.title || currentProgram.name || '') : '';
+        const epgTime = currentProgram ? (currentProgram.time || currentProgram.start || '') : '';
+        
+        return `
+        <div class="channel-card" onclick="playChannel(${chId})">
+            <img src="${channel.image || channel.logo || ''}" alt="${channel.name}" class="channel-image" onerror="this.style.display='none'">
             <div class="channel-info">
                 <div class="channel-name">${channel.name || 'Sem nome'}</div>
-                <div class="channel-category">${channel.category || 'Geral'}</div>
+                <div class="channel-category">${channel.category || channel.group || 'Geral'}</div>
             </div>
-        </div>
-    `).join('');
+            ${epgTitle ? `
+            <div class="channel-epg">
+                <div class="channel-epg-title">${epgTitle}</div>
+                ${epgTime ? `<div class="channel-epg-time">${epgTime}</div>` : ''}
+            </div>` : ''}
+        </div>`;
+    }).join('');
 }
 
 async function playChannel(channelId) {
@@ -649,8 +675,9 @@ async function playChannel(channelId) {
 
 async function loadJogos() {
     try {
-        jogos = await api.getJogos();
-        if (!jogos) return;
+        const data = await api.getJogos();
+        jogos = ensureArray(data);
+        if (jogos.length === 0) return;
         
         renderJogos(jogos);
     } catch (error) {
@@ -660,78 +687,30 @@ async function loadJogos() {
 
 function renderJogos(jogosList) {
     const container = document.getElementById('sidebarContent');
+    const list = ensureArray(jogosList);
     
-    if (!jogosList || jogosList.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>Nenhum jogo disponível</p></div>';
         return;
     }
     
-    container.innerHTML = jogosList.map(jogo => {
-        const channelId = jogo.players ? (Array.isArray(jogo.players) ? jogo.players[0] : jogo.players) : null;
-        const teams = jogo.teams || jogo.team1 && jogo.team2 ? `${jogo.team1} vs ${jogo.team2}` : 'Jogo';
+    container.innerHTML = list.map(jogo => {
+        const channelId = jogo.players ? (Array.isArray(jogo.players) ? jogo.players[0] : jogo.players) : (jogo.channel_id || jogo.id || null);
+        const jogoName = jogo.title || jogo.name || jogo.match || 'Jogo';
+        const league = jogo.league || jogo.liga || jogo.competition || '';
+        const jogoTime = jogo.time || jogo.hour || jogo.date || jogo.horario || '';
+        const teams = jogo.teams || (jogo.team1 && jogo.team2 ? `${jogo.team1} vs ${jogo.team2}` : '');
+        const image = jogo.image || jogo.thumbnail || jogo.poster || '';
         
         return `
             <div class="jogo-card" onclick="${channelId ? `playChannel(${channelId})` : 'alert(\'Canal não disponível\')'}">
-                <div class="jogo-header">
-                    ${jogo.image ? `<img src="${jogo.image}" alt="${jogo.name}" class="jogo-image" onerror="this.style.display='none'">` : ''}
-                    <div class="jogo-info">
-                        <h3>${jogo.name || 'Jogo'}</h3>
-                        <p>${jogo.league || jogo.liga || 'Liga'}</p>
-                    </div>
+                ${image ? `<img src="${image}" alt="${jogoName}" class="jogo-image" onerror="this.style.display='none'">` : ''}
+                <div class="jogo-body">
+                    <div class="jogo-title">${jogoName}</div>
+                    ${league ? `<div class="jogo-league">${league}</div>` : ''}
+                    ${jogoTime ? `<div class="jogo-time">${jogoTime}</div>` : ''}
                 </div>
-                <div class="jogo-teams">
-                    <span>${teams}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function loadEPG() {
-    try {
-        epgs = await api.getEPGs();
-        if (!epgs) return;
-        
-        // Buscar canais para cruzar informações
-        if (channels.length === 0) {
-            channels = await api.getChannels();
-        }
-        
-        renderEPG(epgs);
-    } catch (error) {
-        api.showError('Erro ao carregar EPG', error);
-    }
-}
-
-function renderEPG(epgsList) {
-    const container = document.getElementById('sidebarContent');
-    
-    if (!epgsList || epgsList.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>Nenhum programa disponível</p></div>';
-        return;
-    }
-    
-    // Criar mapa de canais
-    const channelsMap = {};
-    channels.forEach(ch => {
-        channelsMap[ch.id] = ch;
-    });
-    
-    container.innerHTML = epgsList.map(epg => {
-        const channel = channelsMap[epg.id];
-        const channelName = channel ? channel.name : `Canal ${epg.id}`;
-        const channelImage = channel ? channel.image : '';
-        const programTitle = epg.title || epg.name || 'Programa';
-        const programTime = epg.time || epg.start || '';
-        
-        return `
-            <div class="epg-item" onclick="${channel ? `playChannel(${channel.id})` : ''}">
-                ${channelImage ? `<img src="${channelImage}" alt="${channelName}" class="epg-channel-image" onerror="this.style.display='none'">` : ''}
-                <div class="epg-content">
-                    <div class="epg-channel-name">${channelName}</div>
-                    <div class="epg-program-title">${programTitle}</div>
-                    <div class="epg-program-time">${programTime}</div>
-                </div>
+                ${teams ? `<div class="jogo-teams"><span>${teams}</span></div>` : ''}
             </div>
         `;
     }).join('');
@@ -739,7 +718,8 @@ function renderEPG(epgsList) {
 
 async function loadFilmes() {
     try {
-        const filmes = await api.getFilmes();
+        const data = await api.getFilmes();
+        const filmes = ensureArray(data);
         renderFilmes(filmes);
     } catch (error) {
         if (error.message === 'COMING_SOON') {
@@ -764,8 +744,9 @@ async function loadFilmes() {
 
 function renderFilmes(filmesList) {
     const container = document.getElementById('sidebarContent');
+    const list = ensureArray(filmesList);
     
-    if (!filmesList || filmesList.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>Nenhum filme disponível</p></div>';
         return;
     }
@@ -775,7 +756,8 @@ function renderFilmes(filmesList) {
 
 async function loadSeries() {
     try {
-        const series = await api.getSeries();
+        const data = await api.getSeries();
+        const series = ensureArray(data);
         renderSeries(series);
     } catch (error) {
         if (error.message === 'COMING_SOON') {
@@ -800,8 +782,9 @@ async function loadSeries() {
 
 function renderSeries(seriesList) {
     const container = document.getElementById('sidebarContent');
+    const list = ensureArray(seriesList);
     
-    if (!seriesList || seriesList.length === 0) {
+    if (list.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>Nenhuma série disponível</p></div>';
         return;
     }
@@ -832,23 +815,33 @@ function renderPerfil(info) {
         return;
     }
     
-    const name = info.name || info.username || 'Usuário';
-    const avatar = info.avatar || info.image || '';
-    const plan = info.plan || info.plano || 'Básico';
-    const status = info.subscription?.status || info.status || 'active';
-    const expires = info.subscription?.expires || info.expires || 'N/A';
-    const connections = info.connections || info.connection_limit || 'N/A';
+    const userData = info.user || info.user_info || info;
+    const name = userData.name || userData.full_name || userData.nome || userData.username || userData.user || localStorage.getItem('user') || 'Usuário';
+    const username = userData.username || userData.user || localStorage.getItem('user') || '';
+    const avatar = userData.avatar || userData.image || userData.photo || userData.picture || userData.foto || '';
+    const plan = userData.plan || userData.plano || userData.package || userData.membership || 'Básico';
+    const statusVal = userData.subscription?.status || userData.status || userData.estado || 'active';
+    const isActive = statusVal === 'active' || statusVal === 'Active' || statusVal === 'ativo' || statusVal === 'Ativo' || statusVal === '1' || statusVal === 1 || statusVal === true;
+    const expires = userData.subscription?.expires || userData.expires || userData.exp_date || userData.expiration || userData.validade || 'N/A';
+    const connections = userData.connections || userData.connection_limit || userData.max_connections || userData.conexoes || 'N/A';
+    
+    // Generate avatar placeholder if no image
+    const avatarInitial = name.charAt(0).toUpperCase();
+    const avatarHtml = avatar 
+        ? `<img src="${avatar}" alt="${name}" class="profile-avatar" onerror="this.outerHTML='<div class=profile-avatar style=display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--primary-color);background:var(--bg-primary)>${avatarInitial}</div>'">`
+        : `<div class="profile-avatar" style="display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--primary-color);background:var(--bg-primary)">${avatarInitial}</div>`;
     
     container.innerHTML = `
         <div class="profile-header">
-            ${avatar ? `<img src="${avatar}" alt="${name}" class="profile-avatar" onerror="this.style.display='none'">` : ''}
+            ${avatarHtml}
             <div class="profile-name">${name}</div>
+            ${username && username !== name ? `<div style="color:var(--text-muted);font-size:14px;margin-bottom:12px">@${username}</div>` : ''}
             <div class="profile-plan">${plan}</div>
         </div>
         <div class="profile-info">
             <div class="profile-info-item">
                 <div class="profile-info-label">Status</div>
-                <div class="profile-info-value status-${status}">${status === 'active' ? 'Ativo' : 'Inativo'}</div>
+                <div class="profile-info-value ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Ativo' : 'Inativo'}</div>
             </div>
             <div class="profile-info-item">
                 <div class="profile-info-label">Expira em</div>
@@ -858,6 +851,11 @@ function renderPerfil(info) {
                 <div class="profile-info-label">Conexões</div>
                 <div class="profile-info-value">${connections}</div>
             </div>
+            ${username ? `
+            <div class="profile-info-item">
+                <div class="profile-info-label">Usuário</div>
+                <div class="profile-info-value">${username}</div>
+            </div>` : ''}
         </div>
     `;
 }
@@ -866,15 +864,17 @@ function handleSearch() {
     const query = document.getElementById('searchInput').value.toLowerCase();
     
     if (currentTab === 'canais') {
-        const filtered = channels.filter(ch => 
+        const filtered = ensureArray(channels).filter(ch => 
             (ch.name && ch.name.toLowerCase().includes(query)) ||
             (ch.category && ch.category.toLowerCase().includes(query))
         );
         renderChannels(filtered);
     } else if (currentTab === 'jogos') {
-        const filtered = jogos.filter(j => 
+        const filtered = ensureArray(jogos).filter(j => 
             (j.name && j.name.toLowerCase().includes(query)) ||
+            (j.title && j.title.toLowerCase().includes(query)) ||
             (j.league && j.league.toLowerCase().includes(query)) ||
+            (j.liga && j.liga.toLowerCase().includes(query)) ||
             (j.teams && j.teams.toLowerCase().includes(query))
         );
         renderJogos(filtered);
